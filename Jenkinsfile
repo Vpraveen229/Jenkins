@@ -1,33 +1,36 @@
 pipeline {
     agent any
+    
     environment {
-        AWS_REGION = 'us-east-1'
-        AMI_ID = 'ami-12345678'
-        INSTANCE_TYPE = 't2.micro'
-        KEY_NAME = 'my-key'
-        SECURITY_GROUP = 'sg-12345678'
-        SUBNET_ID = 'subnet-12345678'
-        GIT_REPO = 'https://github.com/your-username/your-repo.git'
+        AWS_ACCESS_KEY_ID = credentials('AKIAR7HWYGMF7O3YXAK')  // Or set environment variables for your AWS credentials
+        AWS_SECRET_ACCESS_KEY = credentials('OWo6qQuwy6zUc2CYhvhrF4HnyABZKjBclW7RYq5K')
+        AWS_REGION = 'us-east-2'  // Adjust the region as needed
     }
+
     stages {
-        stage('Clone Git Repository') {
+        stage('Git Checkout') {
             steps {
-                script {
-                    sh "rm -rf myrepo && git clone ${GIT_REPO} myrepo"
-                }
+                // Pull your Git repository
+                git 'https://github.com/Jenkins.git'
             }
         }
+        
         stage('Launch EC2 Instance') {
             steps {
                 script {
-                    def launchCommand = """
-                    aws ec2 run-instances --image-id ${AMI_ID} --count 1 --instance-type ${INSTANCE_TYPE} \
-                    --key-name ${KEY_NAME} --security-group-ids ${SECURITY_GROUP} \
-                    --subnet-id ${SUBNET_ID} --region ${AWS_REGION} \
-                    --query 'Instances[0].InstanceId' --output text
+                    def instanceType = 't2.micro'  // Adjust instance type as needed
+                    def amiId = 'ami-0fc82f4dabc05670b'  // Provide your desired AMI ID
+                    
+                    sh """
+                        aws ec2 run-instances \
+                            --image-id ${amiId} \
+                            --instance-type ${instanceType} \
+                            --count 1 \
+                            --key-name your-key-pair \
+                            --security-group-ids sg-xxxxxxxx \
+                            --subnet-id subnet-xxxxxxxx \
+                            --region ${AWS_REGION}
                     """
-                    def instanceId = sh(script: launchCommand, returnStdout: true).trim()
-                    echo "Launched EC2 Instance: ${instanceId}"
                 }
             }
         }
