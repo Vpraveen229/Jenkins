@@ -25,7 +25,7 @@ pipeline {
                             --min-size 1 \
                             --max-size 10 \
                             --desired-capacity 1 \
-                            --availability-zones us-east-1a \
+                            --availability-zones us-east-2a \
                             --vpc-zone-identifier subnet-066518d1d93ba9db1
                     """
                 }
