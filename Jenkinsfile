@@ -1,35 +1,54 @@
 pipeline {
     agent any
-    
+
     environment {
-        AWS_ACCESS_KEY_ID = credentials('AKIAR7HWYGMF7O3YXAK')  // Or set environment variables for your AWS credentials
+        AWS_ACCESS_KEY_ID = credentials('AKIAR7HWYGMF7O3YXAK')
         AWS_SECRET_ACCESS_KEY = credentials('OWo6qQuwy6zUc2CYhvhrF4HnyABZKjBclW7RYq5K')
-        AWS_REGION = 'us-east-2'  // Adjust the region as needed
+        AWS_REGION = 'us-east-2'
     }
 
     stages {
         stage('Git Checkout') {
             steps {
-                // Pull your Git repository
                 git 'https://github.com/Jenkins.git'
             }
         }
-        
-        stage('Launch EC2 Instance') {
+
+        stage('Create/Update Auto Scaling Group') {
             steps {
                 script {
-                    def instanceType = 't2.micro'  // Adjust instance type as needed
-                    def amiId = 'ami-0fc82f4dabc05670b'  // Provide your desired AMI ID
-                    
+                    // Create or update your Auto Scaling Group configuration
                     sh """
-                        aws ec2 run-instances \
-                            --image-id ${amiId} \
-                            --instance-type ${instanceType} \
-                            --count 1 \
-                            --key-name your-key-pair \
-                            --security-group-ids sg-xxxxxxxx \
-                            --subnet-id subnet-xxxxxxxx \
-                            --region ${AWS_REGION}
+                        aws autoscaling create-auto-scaling-group \
+                            --auto-scaling-group-name my-auto-scaling-group \
+                            --launch-configuration-name my-launch-config \
+                            --min-size 1 \
+                            --max-size 10 \
+                            --desired-capacity 1 \
+                            --availability-zones us-east-1a \
+                            --vpc-zone-identifier subnet-066518d1d93ba9db1
+                    """
+                }
+            }
+        }
+        
+        stage('Apply Scaling Policies') {
+            steps {
+                script {
+                    // Define or update scaling policies
+                    sh """
+                        aws autoscaling put-scaling-policy \
+                            --auto-scaling-group-name my-auto-scaling-group \
+                            --policy-name scale-up-policy \
+                            --scaling-adjustment 1 \
+                            --adjustment-type ChangeInCapacity
+                    """
+                    sh """
+                        aws autoscaling put-scaling-policy \
+                            --auto-scaling-group-name my-auto-scaling-group \
+                            --policy-name scale-down-policy \
+                            --scaling-adjustment -1 \
+                            --adjustment-type ChangeInCapacity
                     """
                 }
             }
